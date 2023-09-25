@@ -103,4 +103,20 @@ router.patch('/update/:id', [
         }
     })
 })
+router.delete('/delete/(:id)',function(req , res){
+    let id = req.params.id;
+    connection.query(`delete from mahasiswa where id_Maha = ${id}`,function(err, rows){
+        if(err){
+            return res.status(500).json({
+                status:false,
+                message:'server eror',
+            })
+        }else{
+            return res.status(200).json({
+                status:true,
+                message: 'data sudah dihapus',
+            })
+        }
+    })
+})
 module.exports = router;
