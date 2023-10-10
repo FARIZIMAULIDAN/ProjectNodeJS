@@ -148,18 +148,39 @@ router.patch('/update/:id',upload.single("gambar"), [
 })
 router.delete('/delete/(:id)',function(req , res){
     let id = req.params.id;
-    connection.query(`delete from mahasiswa where id_Maha = ${id}`,function(err, rows){
+    connection.query(`select *from mahasiswa where id_Maha = ${id}`,function(err,rows) {
         if(err){
             return res.status(500).json({
                 status:false,
-                message:'server eror',
-            })
-        }else{
-            return res.status(200).json({
-                status:true,
-                message: 'data sudah dihapus',
+                message:'server error',
             })
         }
+        if(rows.length === 0){
+            return res.status(404).json({
+                status:false,
+                message:'not found',
+            })
+        }
+        const namaFileLama = rows[0].gambar;
+        
+        // hapus file lama jika tidak ada
+        if(namaFileLama){
+            const pathFileLama = path.join(__dirname,'../public/image',namaFileLama);
+            fs.unlinkSync(pathFileLama);
+        }
+        connection.query(`delete from mahasiswa where id_Maha = ${id}`,function(err, rows){
+            if(err){
+                return res.status(500).json({
+                    status:false,
+                    message:'server eror',
+                })
+            }else{
+                return res.status(200).json({
+                    status:true,
+                    message: 'data sudah dihapus',
+                })
+            }
+        })
     })
 })
 module.exports = router;
