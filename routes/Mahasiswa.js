@@ -4,7 +4,8 @@ const {body, validationResult} = require('express-validator')
 const connection = require('../config/db');
 const fs = require('fs')
 const multer = require('multer')
-const path = require('path')
+const path = require('path');
+const { error } = require('console');
 
 const storage = multer.diskStorage({
     destination:(req , file, cb)=>{
@@ -14,7 +15,18 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + path.extname(file.originalname))
     },
 })
-const upload = multer({storage:storage})
+// Membuat konfigurasi fileFilter pada multer
+const fileFilter = (req,file,cb) =>{
+    // mengecek jenis file
+    if(file.mimetype === 'image.jpeg' || file.mimetype === 'image.png'){
+        cb(null,true); 
+    }else{
+        cb(new Error('Jenis file tidak diizinkan'),false);
+    }
+};
+const upload = multer({storage:storage,fileFilter:fileFilter})
+
+
 
 router.get('/',function(req,res){
     connection.query('SELECT mahasiswa.nama, jurusan.nama_jurusan '+'from mahasiswa join jurusan '+'ON mahasiswa.id_jurusan=jurusan.id_jurusan order by mahasiswa.id_Maha desc',function(err, rows){
