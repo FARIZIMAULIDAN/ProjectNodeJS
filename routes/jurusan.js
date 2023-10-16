@@ -72,7 +72,6 @@ router.get('/(:id)',function (req,res){
         }
     })
 })
-
 router.patch('/update/:id', [
     body('nama_jurusan').notEmpty(),
 ], (req, res) => {

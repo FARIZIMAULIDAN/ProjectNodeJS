@@ -16,9 +16,9 @@ const storage = multer.diskStorage({
     },
 })
 // Membuat konfigurasi fileFilter pada multer
-const fileFilter = (req,file,cb) =>{
+const fileFilter = (req,file,cb) => {
     // mengecek jenis file
-    if(file.mimetype === 'image.jpeg' || file.mimetype === 'image.png'){
+    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
         cb(null,true); 
     }else{
         cb(new Error('Jenis file tidak diizinkan'),false);
@@ -46,7 +46,7 @@ router.get('/',function(req,res){
     })
 });
 
-router.post('/store',upload.single("gambar"), [
+router.post('/store',upload.fields([{name:'gambar',maxCount:1},{name:'swa_foto',maxCount:1}]), [
     //validation
     body('nama').notEmpty(),
     body('nrp').notEmpty(),
@@ -62,7 +62,8 @@ router.post('/store',upload.single("gambar"), [
         nama: req.body.nama,
         nrp: req.body.nrp,
         id_jurusan: req.body.id_jurusan,
-        gambar: req.file.filename
+        gambar:req.files.gambar[0].filename,      
+        swa_foto:req.files.swa_foto[0].filename 
     }
     connection.query('insert into mahasiswa set ?', Data, function(err, rows){
         if(err){
@@ -172,7 +173,7 @@ router.delete('/delete/(:id)',function(req , res){
                 status:false,
                 message:'not found',
             })
-        }
+        }x
         const namaFileLama = rows[0].gambar;
         
         // hapus file lama jika tidak ada
