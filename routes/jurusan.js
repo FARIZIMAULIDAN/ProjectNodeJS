@@ -3,8 +3,10 @@ const router = express.Router();
 const {body, validationResult} = require('express-validator')
 const connection = require('../config/db');
 
-router.get('/',function(req,res){
-    connection.query('SELECT *from jurusan order by id_jurusan desc',function(err, rows){
+const authenticateToken = require('../routes/auth/midleware/authenticateToken.js');
+
+router.get('/',authenticateToken,function(req,res){
+    connection.query('SELECT * from jurusan order by id_jurusan desc',function(err, rows){
         if(err){
             return res.status(500).json({
                 status:false,
@@ -21,7 +23,7 @@ router.get('/',function(req,res){
     })
 });
 
-router.post('/store', [
+router.post('/store',authenticateToken, [
     body('nama_jurusan').notEmpty(),
 ],(req, res) => {
     const error = validationResult(req);
@@ -48,7 +50,7 @@ router.post('/store', [
         }
     })
 })
-router.get('/(:id)',function (req,res){
+router.get('/(:id)',authenticateToken,function (req,res){
     let id = req.params.id;
     connection.query(`select *from jurusan where id_jurusan = ${id}`,function(err,rows){
         if(err){
@@ -72,7 +74,7 @@ router.get('/(:id)',function (req,res){
         }
     })
 })
-router.patch('/update/:id', [
+router.patch('/update/:id',authenticateToken,[
     body('nama_jurusan').notEmpty(),
 ], (req, res) => {
     const error = validationResult(req);
@@ -99,7 +101,7 @@ router.patch('/update/:id', [
         }
     })
 })
-router.delete('/delete/(:id)',function(req , res){
+router.delete('/delete/(:id)',authenticateToken,function(req , res){
     let id = req.params.id;
     connection.query(`delete from jurusan where id_jurusan = ${id}`,function(err, rows){
         if(err){

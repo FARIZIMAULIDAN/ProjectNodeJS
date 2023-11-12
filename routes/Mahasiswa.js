@@ -1,35 +1,32 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const {body, validationResult} = require('express-validator')
 const connection = require('../config/db');
 const fs = require('fs')
 const multer = require('multer')
 const path = require('path');
-const { error } = require('console');
 
 const storage = multer.diskStorage({
-    destination:(req , file, cb)=>{
+    destination:(req , file, cb)=>{ 
         cb(null,'public/image')
     },
     filename:(req ,file,cb)=>{
         cb(null, Date.now() + path.extname(file.originalname))
     },
 })
-// Membuat konfigurasi fileFilter pada multer
 const fileFilter = (req,file,cb) => {
-    // mengecek jenis file
     if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
         cb(null,true); 
     }else{
         cb(new Error('Jenis file tidak diizinkan'),false);
     }
 };
-const upload = multer({storage:storage,fileFilter:fileFilter})
+const upload = multer({storage:storage,fileFilter:fileFilter});
 
+const authenticateToken = require('../routes/auth/midleware/authenticateToken.js');
 
-
-router.get('/',function(req,res){
-    connection.query('SELECT mahasiswa.nama, jurusan.nama_jurusan '+'from mahasiswa join jurusan '+'ON mahasiswa.id_jurusan=jurusan.id_jurusan order by mahasiswa.id_Maha desc',function(err, rows){
+router.get('/', authenticateToken,function(req,res){
+    connection.query('SELECT mahasiswa.id_Maha,mahasiswa.nama,mahasiswa.nrp, jurusan.nama_jurusan , mahasiswa.gambar, mahasiswa.swa_foto '+'from mahasiswa join jurusan '+'ON mahasiswa.id_jurusan=jurusan.id_jurusan order by mahasiswa.id_Maha desc',function(err, rows){
         if(err){
             return res.status(500).json({
                 status:false,
@@ -45,8 +42,7 @@ router.get('/',function(req,res){
         }
     })
 });
-
-router.post('/store',upload.fields([{name:'gambar',maxCount:1},{name:'swa_foto',maxCount:1}]), [
+router.post('/store',authenticateToken, upload.fields([{name:'gambar',maxCount:1},{name:'swa_foto',maxCount:1}]), [
     //validation
     body('nama').notEmpty(),
     body('nrp').notEmpty(),
@@ -105,7 +101,7 @@ router.get('/(:id)',function (req,res){
         }
     })
 })
-router.patch('/update/:id',upload.fields([{name:'gambar',maxCount:1},{name:'swa_foto',maxCount:1}]) , [
+router.patch('/update/:id',authenticateToken,upload.fields([{name:'gambar',maxCount:1},{name:'swa_foto',maxCount:1}]) , [
     body('nama').notEmpty(),
     body('nrp').notEmpty(),
     body('id_jurusan').notEmpty()
@@ -119,11 +115,12 @@ router.patch('/update/:id',upload.fields([{name:'gambar',maxCount:1},{name:'swa_
     let id = req.params.id;
     let gambar = req.files['gambar'] ? req.files['gambar'][0].filename : null;
     let swa_foto = req.files['swa_foto'] ? req.files['swa_foto'][0].filename : null;
-    connection.query(`select *from mahasiswa where id_Maha = ${id}`,function(err,rows) {
+    connection.query(`select * from mahasiswa where id_Maha = ${id}`,function(err,rows) {
         if(err){
             return res.status(500).json({
                 status:false,
                 message:'server error',
+                error: err
             })
         }
         if(rows.length === 0){
@@ -147,15 +144,21 @@ router.patch('/update/:id',upload.fields([{name:'gambar',maxCount:1},{name:'swa_
         let Data = {
             nama: req.body.nama,
             nrp: req.body.nrp,
-            id_jurusan: req.body.id_jurusan,
-            gambar: gambar,
-            swa_foto:swa_foto
+            id_jurusan: req.body.id_jurusan
+        }
+
+        if(gambar){
+            Data.gambar =gambar;
+        }
+        if(swa_foto){
+            Data.swa_foto =swa_foto;
         }
         connection.query(`update mahasiswa set ? where id_Maha = ${id}`, Data, function (err, rows) {
             if(err){
                 return res.status(500).json({
                     status: false,
                     message: 'Server Error',
+                    error: err
                 })
             } else {
                 return res.status(200).json({
@@ -166,7 +169,7 @@ router.patch('/update/:id',upload.fields([{name:'gambar',maxCount:1},{name:'swa_
         })
     })
 })
-router.delete('/delete/(:id)',function(req , res){
+router.delete('/delete/(:id)',authenticateToken,function(req , res){
     let id = req.params.id;
     connection.query(`select *from mahasiswa where id_Maha = ${id}`,function(err,rows) {
         if(err){
@@ -198,6 +201,7 @@ router.delete('/delete/(:id)',function(req , res){
                 return res.status(500).json({
                     status:false,
                     message:'server eror',
+                    error: err
                 })
             }else{
                 return res.status(200).json({
